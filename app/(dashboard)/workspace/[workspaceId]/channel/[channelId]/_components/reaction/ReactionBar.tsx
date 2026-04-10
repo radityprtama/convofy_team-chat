@@ -1,3 +1,5 @@
+"use client";
+
 import {
   InfiniteData,
   useMutation,
@@ -41,7 +43,11 @@ export function ReactionBar({
         const bump = (rxns: GroupReactionSchema[]) => {
           const found = rxns.find((r) => r.emoji === vars.emoji);
 
-          if (found) {
+          if (!found) {
+            return [...rxns, { emoji: vars.emoji, count: 1, reactedByMe: true }];
+          }
+
+          if (found.reactedByMe) {
             const dec = found.count - 1;
 
             return dec <= 0
@@ -53,7 +59,11 @@ export function ReactionBar({
                 );
           }
 
-          return [...rxns, { emoji: vars.emoji, count: 1, reactedByMe: true }];
+          return rxns.map((r) =>
+            r.emoji === found.emoji
+              ? { ...r, count: r.count + 1, reactedByMe: true }
+              : r,
+          );
         };
 
         const isThread = context && context.type === "thread";
@@ -100,7 +110,7 @@ export function ReactionBar({
 
         const listKey = ["message.list", channelId];
         await queryClient.cancelQueries({ queryKey: listKey });
-        const previous = queryClient.getQueriesData({ queryKey: listKey });
+        const previous = queryClient.getQueryData<infiniteReplies>(listKey);
 
         queryClient.setQueryData<infiniteReplies>(listKey, (old) => {
           if (!old) return old;
@@ -122,16 +132,28 @@ export function ReactionBar({
         return { previous, listKey };
       },
       onSuccess: () => {
-        return toast.success("Emoji added!");
+        return toast.success("Emoji updated!");
       },
-      onError: (_err, _vars, ctx) => {
-        if (ctx?.threadQueryKey && ctx.prevThread) {
+      onError: (err, _vars, ctx) => {
+        if (ctx?.threadQueryKey) {
           queryClient.setQueryData(ctx.threadQueryKey, ctx.prevThread);
         }
-        if (ctx?.previous && ctx.listKey) {
+        if (ctx?.listKey) {
           queryClient.setQueryData(ctx.listKey, ctx.previous);
         }
-        return toast.error("Emoji not added");
+        return toast.error(err.message || "Emoji not added");
+      },
+      onSettled: () => {
+        if (context?.type === "thread") {
+          queryClient.invalidateQueries({
+            queryKey: orpc.message.thread.list.queryOptions({
+              input: { messageId: context.threadId },
+            }).queryKey,
+          });
+          return;
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["message.list", channelId] });
       },
     }),
   );
