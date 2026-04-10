@@ -1,4 +1,4 @@
-import z, { emoji } from "zod";
+import z from "zod";
 import { standardSecurityMiddleware } from "../middlewares/arcjet/standard";
 import { writeSecurityMiddleware } from "../middlewares/arcjet/write";
 import { requiredMiddleware } from "../middlewares/auth";
@@ -397,26 +397,38 @@ export const togglereaction = base
       throw errors.NOT_FOUND();
     }
 
-    const inserted = await prisma.messageReaction.createMany({
-      data: [
-        {
+    const existingReaction = await prisma.messageReaction.findUnique({
+      where: {
+        messageId_userId_emoji: {
+          messageId: input.messageId,
+          userId: context.user.id,
+          emoji: input.emoji,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingReaction) {
+      await prisma.messageReaction.delete({
+        where: {
+          messageId_userId_emoji: {
+            messageId: input.messageId,
+            userId: context.user.id,
+            emoji: input.emoji,
+          },
+        },
+      });
+    } else {
+      await prisma.messageReaction.create({
+        data: {
           emoji: input.emoji,
           messageId: input.messageId,
           userId: context.user.id,
           userName: context.user.given_name ?? "John Doe",
           userAvatar: getAvatar(context.user.picture, context.user.email!),
           userEmail: context.user.email!,
-        },
-      ],
-      skipDuplicates: true,
-    });
-
-    if (inserted.count === 0) {
-      await prisma.messageReaction.deleteMany({
-        where: {
-          messageId: input.messageId,
-          userId: context.user.id,
-          emoji: input.emoji,
         },
       });
     }
