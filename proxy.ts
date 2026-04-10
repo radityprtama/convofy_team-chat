@@ -21,9 +21,22 @@ const aj = arcjet({
   ],
 });
 
+type KindeAwareRequest = NextRequest & {
+  kindeAuth?: {
+    user?: { org_code?: string };
+    token?: {
+      org_code?: string;
+      claims?: {
+        org_code?: string;
+        organization?: string;
+      };
+    };
+  };
+};
+
 async function existingMiddleware(req: NextRequest) {
   const { nextUrl } = req as NextRequest;
-  const kinde = (req as any).kindeAuth;
+  const kinde = (req as KindeAwareRequest).kindeAuth;
 
   const orgCode =
     kinde?.user?.org_code ||
@@ -33,8 +46,17 @@ async function existingMiddleware(req: NextRequest) {
 
   if (nextUrl.pathname.startsWith("/workspace")) {
     if (!orgCode) {
-      // kalau user belum punya org, redirect ke homepage
-      return NextResponse.redirect(new URL("/", req.url));
+      if (nextUrl.pathname !== "/workspace") {
+        nextUrl.pathname = "/workspace";
+        return NextResponse.redirect(nextUrl);
+      }
+
+      return NextResponse.next();
+    }
+
+    if (nextUrl.pathname === "/workspace") {
+      nextUrl.pathname = `/workspace/${orgCode}`;
+      return NextResponse.redirect(nextUrl);
     }
 
     if (!nextUrl.pathname.includes(orgCode)) {

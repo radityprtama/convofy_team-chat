@@ -1,10 +1,9 @@
 "use client";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import React from "react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 import {
   RegisterLink,
   LoginLink,
@@ -121,6 +120,7 @@ export const HeroHeader = () => {
                   ) : (
                     <>
                       <LoginLink
+                        postLoginRedirectURL="/workspace"
                         className={buttonVariants({
                           variant: "outline",
                           size: "sm",
@@ -130,6 +130,7 @@ export const HeroHeader = () => {
                         Login
                       </LoginLink>
                       <RegisterLink
+                        postLoginRedirectURL="/workspace"
                         className={buttonVariants({
                           size: "sm",
                           className: cn(isScrolled && "lg:hidden"),
@@ -142,6 +143,7 @@ export const HeroHeader = () => {
                         className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
                       >
                         <RegisterLink
+                          postLoginRedirectURL="/workspace"
                           className={buttonVariants({
                             size: "sm",
                           })}

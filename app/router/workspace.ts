@@ -3,7 +3,6 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { base } from "@/app/middlewares/base";
 import { z } from "zod";
 import { requiredMiddleware } from "../middlewares/auth";
-import { requiredWorkspaceMiddleware } from "../middlewares/workspace";
 import { workspaceSchema } from "../schemas/workspace";
 import { init, Organizations } from "@kinde/management-api-js";
 import { standardSecurityMiddleware } from "../middlewares/arcjet/standard";
@@ -11,7 +10,6 @@ import { heavyWriteSecurityMiddleware } from "../middlewares/arcjet/heavy-write"
 
 export const listWorkspaces = base
   .use(requiredMiddleware)
-  .use(requiredWorkspaceMiddleware)
   .route({
     method: "GET",
     path: "/workspaces",
@@ -29,7 +27,7 @@ export const listWorkspaces = base
         })
       ),
       user: z.custom<KindeUser<Record<string, unknown>>>(),
-      currentWorkspace: z.custom<KindeOrganization<unknown>>(),
+      currentWorkspace: z.custom<KindeOrganization<unknown> | null>(),
     })
   )
   .handler(async ({ context, errors }) => {
@@ -48,13 +46,12 @@ export const listWorkspaces = base
         avatar: org.name?.charAt(0) ?? "Z",
       })),
       user: context.user,
-      currentWorkspace: context.workspace,
+      currentWorkspace: context.workspace ?? null,
     };
   });
 
 export const createWorkspace = base
   .use(requiredMiddleware)
-  .use(requiredWorkspaceMiddleware)
   .use(standardSecurityMiddleware)
   .use(heavyWriteSecurityMiddleware)
   .route({

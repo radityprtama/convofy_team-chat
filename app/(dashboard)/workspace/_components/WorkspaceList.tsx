@@ -39,11 +39,14 @@ export function WorkspaceList() {
     <TooltipProvider>
       <div className="flex flex-col gap-2">
         {workspaces.map((ws) => {
-          const isActive = currentWorkspace.orgCode === ws.id;
+          const isActive = currentWorkspace?.orgCode === ws.id;
           return (
             <Tooltip key={ws.id}>
               <TooltipTrigger asChild>
-                <LoginLink orgCode={ws.id}>
+                <LoginLink
+                  orgCode={ws.id}
+                  postLoginRedirectURL={`/workspace/${ws.id}`}
+                >
                   <Button
                     size="icon"
                     className={cn(
